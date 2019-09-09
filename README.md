@@ -9,7 +9,7 @@ To make sure this image stays up to date, CI is scheduled to run daily builds.
 image                 | node  | expo  | status
 ---                   | ---   | ---   | ---
 `bycedric/expo-cli:3` | `12`  | `3`   | **latest**
-`bycedric/expo-cli:2` | `12`  | `2`   | _outdated_
+`bycedric/expo-cli:2` | `10`  | `2`   | _outdated_
 
 > All major versions are daily rebuilt, but upgrading to the latest version is strongly recommended.
 
