@@ -14,5 +14,6 @@ RUN yarn global add expo-cli@$EXPO_VERSION \
 
 COPY entrypoint.sh LICENSE.md README.md /
 
+USER node
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["--help"]
