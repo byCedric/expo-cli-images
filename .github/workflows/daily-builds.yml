@@ -3,6 +3,12 @@ name: Daily builds
 on:
   schedule:
     - cron: 0 7 * * *
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 jobs:
   expo-v3:
     runs-on: ubuntu-latest
@@ -19,8 +25,10 @@ jobs:
       - name: Test project
         run: docker run --rm bycedric/expo-cli:3 bash -c "expo init /tmp/project --template expo-template-tabs && yarn --cwd /tmp/project jest && expo diagnostics /tmp/project"
       - name: Authenticate docker
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
       - name: Publish image
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           docker tag bycedric/expo-cli:3 bycedric/expo-cli:latest
           docker push bycedric/expo-cli:3
@@ -38,6 +46,8 @@ jobs:
       - name: Test image
         run: docker run --rm bycedric/expo-cli:2 diagnostics
       - name: Authenticate docker
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
       - name: Publish image
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: docker push bycedric/expo-cli:2
