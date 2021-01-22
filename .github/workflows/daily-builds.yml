@@ -11,6 +11,29 @@ on:
       - main
   workflow_dispatch:
 jobs:
+  expo-v4:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build image
+        run: >
+          docker build . \
+            --build-arg NODE_VERSION=14 \
+            --build-arg EXPO_VERSION=4 \
+            --tag bycedric/expo-cli:4
+      - name: Test entrypoint
+        run: docker run --rm bycedric/expo-cli:4 --version
+      - name: Test project
+        run: docker run --rm bycedric/expo-cli:4 bash -c "expo init /tmp/project --template expo-template-tabs && yarn --cwd /tmp/project jest && expo diagnostics /tmp/project"
+      - name: Authenticate docker
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
+      - name: Publish image
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          docker tag bycedric/expo-cli:4 bycedric/expo-cli:latest
+          docker push bycedric/expo-cli:4
+          docker push bycedric/expo-cli:latest
   expo-v3:
     runs-on: ubuntu-latest
     steps:
@@ -30,10 +53,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
       - name: Publish image
         if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          docker tag bycedric/expo-cli:3 bycedric/expo-cli:latest
-          docker push bycedric/expo-cli:3
-          docker push bycedric/expo-cli:latest
+        run: docker push bycedric/expo-cli:3
   expo-v2:
     runs-on: ubuntu-latest
     steps:
