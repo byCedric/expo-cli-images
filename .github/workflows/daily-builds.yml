@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 jobs:
   expo-v3:
     runs-on: ubuntu-latest
