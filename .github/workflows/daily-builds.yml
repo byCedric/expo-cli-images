@@ -61,7 +61,7 @@ jobs:
       - name: Build image
         run: >
           docker build . \
-            --build-arg NODE_VERSION=10 \
+            --build-arg NODE_VERSION=12 \
             --build-arg EXPO_VERSION=2 \
             --tag bycedric/expo-cli:2
       - name: Test image
