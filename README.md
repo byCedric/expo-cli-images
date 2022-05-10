@@ -8,9 +8,10 @@ To make sure this image stays up to date, CI is scheduled to run daily builds.
 
 image                 | node  | expo  | status
 ---                   | ---   | ---   | ---
-`bycedric/expo-cli:4` | `14`  | `4`   | **latest**
-`bycedric/expo-cli:3` | `12`  | `3`   | _outdated_
-`bycedric/expo-cli:2` | `12`  | `2`   | _outdated_
+`bycedric/expo-cli:5` | `16`  | `5`   | **latest**
+`bycedric/expo-cli:4` | `14`  | `4`   | _outdated_
+`bycedric/expo-cli:3` | `14`  | `3`   | _outdated_
+`bycedric/expo-cli:2` | `14`  | `2`   | _outdated_
 
 > All major versions are daily rebuilt, but upgrading to the latest version is strongly recommended.
 
@@ -57,10 +58,10 @@ You can use this image to build a custom version of both node and expo-cli.
 It accepts both `NODE_VERSION` and `EXPO_VERSION` as build arguments.
 
 ```bash
-# create a node 14 and expo cli 4 image
+# create a node 16-alpine and expo cli 5 image
 $ docker build . \
-    --build-arg NODE_VERSION=14 \
-    --build-arg EXPO_VERSION=4 \
+    --build-arg NODE_VERSION=16-alpine \
+    --build-arg EXPO_VERSION=5 \
     --tag awsomeorg/expo-cli
 ```
 
