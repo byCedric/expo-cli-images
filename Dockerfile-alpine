@@ -8,7 +8,11 @@ LABEL maintainer="Cedric van Putten <me@bycedric.com>"
 
 ARG EXPO_VERSION="latest"
 
-RUN npm install --global --unsafe-perm sharp-cli expo-cli@$EXPO_VERSION && npm cache clean --force
+RUN apk add --no-cache bash git vips vips-dev build-base \
+  && npm install --global --unsafe-perm sharp-cli expo-cli@$EXPO_VERSION \
+  && npm cache clean --force \
+  && apk del vips-dev build-base \
+  && rm -rf /var/cache/apk/*
 
 COPY entrypoint.sh LICENSE.md README.md /
 
