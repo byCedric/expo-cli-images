@@ -6,12 +6,16 @@ To make sure this image stays up to date, CI is scheduled to run daily builds.
 
 ## Supported versions
 
-image                 | node  | expo  | status
----                   | ---   | ---   | ---
-`bycedric/expo-cli:5` | `16`  | `5`   | **latest**
-`bycedric/expo-cli:4` | `14`  | `4`   | _outdated_
-`bycedric/expo-cli:3` | `14`  | `3`   | _outdated_
-`bycedric/expo-cli:2` | `14`  | `2`   | _outdated_
+| image                        | node         | expo | status     |
+| ---------------------------- | ------------ | ---- | ---------- |
+| `bycedric/expo-cli:5`        | `lts`        | `5`  | **latest** |
+| `bycedric/expo-cli:5-alpine` | `lts-alpine` | `5`  | **latest** |
+| `bycedric/expo-cli:4`        | `lts`        | `4`  | _outdated_ |
+| `bycedric/expo-cli:4-alpine` | `lts-alpine` | `4`  | _outdated_ |
+| `bycedric/expo-cli:3`        | `14`         | `3`  | _outdated_ |
+| `bycedric/expo-cli:3-alpine` | `14-alpine`  | `3`  | _outdated_ |
+| `bycedric/expo-cli:2`        | `12`         | `2`  | _outdated_ |
+| `bycedric/expo-cli:2-alpine` | `12-alpine`  | `2`  | _outdated_ |
 
 > All major versions are daily rebuilt, but upgrading to the latest version is strongly recommended.
 
@@ -19,7 +23,7 @@ image                 | node  | expo  | status
 
 The entry point of this image forwards to the [Expo CLI][link-cli].
 It automatically authenticates when you define the `EXPO_TOKEN` environment variable.
-You can also use `EXPO_CLI_USERNAME` and `EXPO_CLI_PASSWORD` to authenticate with your Expo credentials. 
+You can also use `EXPO_CLI_USERNAME` and `EXPO_CLI_PASSWORD` to authenticate with your Expo credentials.
 When these environment variables are undefined, it skips this step and forwards the command directly to Expo.
 
 ## How to use it?
@@ -58,9 +62,9 @@ You can use this image to build a custom version of both node and expo-cli.
 It accepts both `NODE_VERSION` and `EXPO_VERSION` as build arguments.
 
 ```bash
-# create a node 16-alpine and expo cli 5 image
+# create a node 16 and expo cli 5 image
 $ docker build . \
-    --build-arg NODE_VERSION=16-alpine \
+    --build-arg NODE_VERSION=16 \
     --build-arg EXPO_VERSION=5 \
     --tag awsomeorg/expo-cli
 ```
@@ -69,7 +73,7 @@ $ docker build . \
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
---- ---
+---
 
 <p align="center">
     with&nbsp:heart:&nbsp&nbsp<strong>byCedric</strong>

@@ -19,47 +19,65 @@ jobs:
     strategy:
       matrix:
         expo-version: [5, 4, 3, 2]
+        os: [default, alpine]
         include:
           - expo-version: 5
-            node-version: 16
             latest-tag: true
-          - expo-version: 4
-            node-version: 14
           - expo-version: 3
             node-version: 14
           - expo-version: 2
-            node-version: 14
+            node-version: 12
     steps:
       - name: 🏗 Setup repo
         uses: actions/checkout@v3
+      
+      - name: ⚙️ Prepare settings
+        id: settings
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const node = '${{ matrix.node-version }}' || 'lts'
+            const latest = ${{ matrix.latest-tag == true }}
+            const suffix =  ${{ matrix.os == 'alpine' }} ? '-alpine' : ''
+            core.setOutput('suffix', suffix)
+            core.setOutput('node', node + suffix)
+            core.setOutput('tag', latest ? 'latest' : '')
+            core.setOutput('dockerfile', 'Dockerfile' + suffix)
 
       - name: 👷 Build image
         uses: docker/build-push-action@v3
         with:
-          tags: bycedric/expo-cli:${{ matrix.expo-version }}
           context: .
+          tags: bycedric/expo-cli:dev
+          file: ${{ steps.settings.outputs.dockerfile }}
           build-args: |
             EXPO_VERSION=${{ matrix.expo-version }}
-            NODE_VERSION=${{ matrix.node-version }}
-
+            NODE_VERSION=${{ steps.settings.outputs.node }}
+      
       - name: 🧪 Test entrypoint
-        run: docker run --rm bycedric/expo-cli:${{ matrix.expo-version }} --version
+        run: docker run --rm -w /tmp/project bycedric/expo-cli:dev --version
+
+      - name: 🧪 Test sharp
+        run: docker run --rm -w /tmp/project bycedric/expo-cli:dev bash -c "sharp --version"
 
       - name: 🧪 Test project
         if: ${{ matrix.expo-version != '2' }}
-        run: docker run --rm -w /tmp/project bycedric/expo-cli:${{ matrix.expo-version }} bash -c "expo init . --template expo-template-tabs && yarn jest && expo diagnostics"
+        run: docker run --rm -w /tmp/project bycedric/expo-cli:dev bash -c "expo init . --template expo-template-tabs && yarn jest"
 
       - name: 🏷️ Label version
         id: version
-        run: echo "::set-output name=semver::$(docker run --rm bycedric/expo-cli:${{ matrix.expo-version }} --version)"
+        run: echo "::set-output name=semver::$(docker run --rm bycedric/expo-cli:dev --version)"
 
       - name: 🏷️ Label image
         uses: docker/metadata-action@v4
         id: meta
         with:
           images: bycedric/expo-cli
-          flavor: latest=${{ matrix.latest-tag == true }}
+          flavor: |
+            latest=false
+            suffix=${{ steps.settings.outputs.suffix }}
           tags: |
+            type=raw,value=${{ steps.settings.outputs.tag }},enable=${{ steps.settings.outputs.tag != '' }}
             type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}
             type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}.{{minor}}
             type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}.{{minor}}.{{patch}}
@@ -75,10 +93,11 @@ jobs:
         uses: docker/build-push-action@v3
         if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
         with:
-          push: true
           context: .
+          push: true
+          file: ${{ steps.settings.outputs.dockerfile }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             EXPO_VERSION=${{ matrix.expo-version }}
-            NODE_VERSION=${{ matrix.node-version }}
+            NODE_VERSION=${{ steps.settings.outputs.node }}
