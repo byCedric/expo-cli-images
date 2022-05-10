@@ -9,8 +9,8 @@ LABEL maintainer="Cedric van Putten <me@bycedric.com>"
 
 ARG EXPO_VERSION="latest"
 
-RUN yarn global add expo-cli@$EXPO_VERSION \
-	&& yarn cache clean
+RUN npm install --global expo-cli@$EXPO_VERSION \
+	&& npm cache clean --force
 
 COPY entrypoint.sh LICENSE.md README.md /
 

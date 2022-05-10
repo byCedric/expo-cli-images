@@ -1,74 +1,84 @@
----
 name: Daily builds
+
 on:
+  workflow_dispatch:
   schedule:
     - cron: 0 7 * * *
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  expo-v4:
+  expo-cli:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        expo-version: [5, 4, 3, 2]
+        include:
+          - expo-version: 5
+            node-version: 16
+            latest-tag: true
+          - expo-version: 4
+            node-version: 14
+          - expo-version: 3
+            node-version: 14
+          - expo-version: 2
+            node-version: 14
     steps:
-      - uses: actions/checkout@v1
-      - name: Build image
-        run: >
-          docker build . \
-            --build-arg NODE_VERSION=14 \
-            --build-arg EXPO_VERSION=4 \
-            --tag bycedric/expo-cli:4
-      - name: Test entrypoint
-        run: docker run --rm bycedric/expo-cli:4 --version
-      - name: Test project
-        run: docker run --rm bycedric/expo-cli:4 bash -c "expo init /tmp/project --template expo-template-tabs && yarn --cwd /tmp/project jest && expo diagnostics /tmp/project"
-      - name: Authenticate docker
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
-      - name: Publish image
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          docker tag bycedric/expo-cli:4 bycedric/expo-cli:latest
-          docker push bycedric/expo-cli:4
-          docker push bycedric/expo-cli:latest
-  expo-v3:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Build image
-        run: >
-          docker build . \
-            --build-arg NODE_VERSION=12 \
-            --build-arg EXPO_VERSION=3 \
-            --tag bycedric/expo-cli:3
-      - name: Test entrypoint
-        run: docker run --rm bycedric/expo-cli:3 --version
-      - name: Test project
-        run: docker run --rm bycedric/expo-cli:3 bash -c "expo init /tmp/project --template expo-template-tabs && yarn --cwd /tmp/project jest && expo diagnostics /tmp/project"
-      - name: Authenticate docker
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
-      - name: Publish image
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: docker push bycedric/expo-cli:3
-  expo-v2:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Build image
-        run: >
-          docker build . \
-            --build-arg NODE_VERSION=12 \
-            --build-arg EXPO_VERSION=2 \
-            --tag bycedric/expo-cli:2
-      - name: Test image
-        run: docker run --rm bycedric/expo-cli:2 diagnostics
-      - name: Authenticate docker
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u bycedric --password-stdin
-      - name: Publish image
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: docker push bycedric/expo-cli:2
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v3
+
+      - name: 👷 Build image
+        uses: docker/build-push-action@v3
+        with:
+          tags: bycedric/expo-cli:${{ matrix.expo-version }}
+          context: .
+          build-args: |
+            EXPO_VERSION=${{ matrix.expo-version }}
+            NODE_VERSION=${{ matrix.node-version }}
+
+      - name: 🧪 Test entrypoint
+        run: docker run --rm bycedric/expo-cli:${{ matrix.expo-version }} --version
+
+      - name: 🧪 Test project
+        if: ${{ matrix.expo-version != '2' }}
+        run: docker run --rm -w /tmp/project bycedric/expo-cli:${{ matrix.expo-version }} bash -c "expo init . --template expo-template-tabs && yarn jest && expo diagnostics"
+
+      - name: 🏷️ Label version
+        id: version
+        run: echo "::set-output name=semver::$(docker run --rm bycedric/expo-cli:${{ matrix.expo-version }} --version)"
+
+      - name: 🏷️ Label image
+        uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: bycedric/expo-cli
+          flavor: latest=${{ matrix.latest-tag == true }}
+          tags: |
+            type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}
+            type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}.{{minor}}
+            type=semver,value=${{ steps.version.outputs.semver }},pattern={{major}}.{{minor}}.{{patch}}
+
+      - name: 🔒 Login to DockerHub
+        uses: docker/login-action@v2
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+        with:
+          username: bycedric
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🚀 Push images
+        uses: docker/build-push-action@v3
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+        with:
+          push: true
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            EXPO_VERSION=${{ matrix.expo-version }}
+            NODE_VERSION=${{ matrix.node-version }}
